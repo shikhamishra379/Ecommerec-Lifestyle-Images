@@ -1,4 +1,3 @@
-
 export type AssetType = 'Lifestyle' | 'Infographic';
 export type AspectRatio = '1:1' | '9:16' | '16:9' | '4:5';
 
@@ -26,14 +25,6 @@ export interface ProductInfo {
 }
 
 export interface GenerationResult {
-  concepts: LifestyleConcept[];
-  groundingSources?: GroundingSource[];
-}
-
-export interface SavedProject {
-  id: string;
-  timestamp: number;
-  product: ProductInfo;
   concepts: LifestyleConcept[];
   groundingSources?: GroundingSource[];
 }

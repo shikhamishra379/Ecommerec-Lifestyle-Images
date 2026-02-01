@@ -1,6 +1,5 @@
-
-import React, { useState, useEffect } from 'react';
-import { ProductInfo, LifestyleConcept, AssetType, AspectRatio, SavedProject, GroundingSource } from './types';
+import React, { useState } from 'react';
+import { ProductInfo, LifestyleConcept, AssetType, AspectRatio, GroundingSource } from './types';
 import { generateLifestyleConcepts } from './services/geminiService';
 import { 
   SparklesIcon, 
@@ -9,17 +8,11 @@ import {
   PencilSquareIcon,
   PlusIcon,
   PhotoIcon,
-  RectangleGroupIcon,
   InformationCircleIcon,
   CheckBadgeIcon,
-  ArchiveBoxIcon,
-  XMarkIcon,
-  TrashIcon,
-  ClockIcon,
   MagnifyingGlassIcon,
   LinkIcon,
-  HeartIcon,
-  ShoppingBagIcon
+  HeartIcon
 } from '@heroicons/react/24/outline';
 
 const getInitialProductState = (): ProductInfo => ({
@@ -38,19 +31,13 @@ const Mascot = () => (
       Let's create! ✨
     </div>
     <svg width="48" height="48" viewBox="0 0 100 100" className="drop-shadow-xl">
-      {/* Box Body */}
       <rect x="20" y="40" width="60" height="45" rx="8" fill="#6366f1" />
       <path d="M20 50 L50 40 L80 50 L80 85 L20 85 Z" fill="#4f46e5" />
-      {/* Box Flaps */}
       <path d="M20 40 L35 25 L65 25 L80 40" fill="#818cf8" />
-      {/* Tape */}
       <rect x="45" y="25" width="10" height="40" fill="#e0e7ff" opacity="0.8" />
-      {/* Eyes */}
       <circle cx="40" cy="65" r="4" fill="white" />
       <circle cx="60" cy="65" r="4" fill="white" />
-      {/* Smile */}
       <path d="M45 72 Q50 77 55 72" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" />
-      {/* Heart */}
       <path d="M50 50 L52 48 A2 2 0 0 0 48 48 L50 50" fill="#f87171" transform="translate(-1, 0) scale(2)" />
     </svg>
   </div>
@@ -64,64 +51,6 @@ const App: React.FC = () => {
   const [refinement, setRefinement] = useState('');
   const [copySuccess, setCopySuccess] = useState<string | null>(null);
   const [showMascot, setShowMascot] = useState(false);
-  
-  // Persistence States
-  const [savedProjects, setSavedProjects] = useState<SavedProject[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
-
-  // Load history on mount
-  useEffect(() => {
-    try {
-      const history = localStorage.getItem('lifestyle_lens_history');
-      if (history) {
-        setSavedProjects(JSON.parse(history));
-      }
-    } catch (e) {
-      console.error("Failed to load history from storage:", e);
-      localStorage.removeItem('lifestyle_lens_history');
-    }
-  }, []);
-
-  const saveToLocalStorage = (projects: SavedProject[]) => {
-    try {
-      localStorage.setItem('lifestyle_lens_history', JSON.stringify(projects));
-    } catch (e) {
-      console.warn("LocalStorage storage limit exceeded.");
-      alert("Storage full! Try deleting some old projects to save new ones.");
-    }
-  };
-
-  const handleSaveProject = () => {
-    if (concepts.length === 0) return;
-    
-    const newSavedProject: SavedProject = {
-      id: `project-${Date.now()}`,
-      timestamp: Date.now(),
-      product: { ...product },
-      concepts: [...concepts],
-      groundingSources: [...groundingSources]
-    };
-    
-    const updatedHistory = [newSavedProject, ...savedProjects];
-    setSavedProjects(updatedHistory);
-    saveToLocalStorage(updatedHistory);
-    alert("Project saved to your local history!");
-  };
-
-  const loadProject = (project: SavedProject) => {
-    setProduct({ ...project.product });
-    setConcepts([...project.concepts]);
-    setGroundingSources(project.groundingSources || []);
-    setShowHistory(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const deleteProject = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const updatedHistory = savedProjects.filter(p => p.id !== id);
-    setSavedProjects(updatedHistory);
-    saveToLocalStorage(updatedHistory);
-  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -177,15 +106,7 @@ const App: React.FC = () => {
   };
 
   const handleNewProject = () => {
-    setProduct({
-      name: '',
-      url: '',
-      productImageBase64: null,
-      theme: '',
-      assetType: 'Lifestyle',
-      aspectRatio: '1:1',
-      specificDetails: '',
-    });
+    setProduct(getInitialProductState());
     setConcepts([]);
     setGroundingSources([]);
     setRefinement('');
@@ -199,62 +120,6 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-20 bg-[#FDFDFF] text-gray-900">
-      {/* History Slide-over */}
-      {showHistory && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowHistory(false)} />
-          <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            <div className="p-8 border-b border-gray-100 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <ArchiveBoxIcon className="w-6 h-6 text-indigo-600" />
-                <h3 className="text-xl font-black tracking-tighter">PROJECT HISTORY</h3>
-              </div>
-              <button onClick={() => setShowHistory(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                <XMarkIcon className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="flex-grow overflow-y-auto p-6 space-y-4">
-              {savedProjects.length === 0 ? (
-                <div className="text-center py-20 text-gray-400">
-                  <ClockIcon className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                  <p className="font-bold text-xs uppercase tracking-widest">No saved projects yet</p>
-                </div>
-              ) : (
-                savedProjects.map((proj) => (
-                  <div 
-                    key={proj.id} 
-                    onClick={() => loadProject(proj)}
-                    className="group border border-gray-100 bg-gray-50/50 p-5 rounded-[2rem] hover:border-indigo-200 hover:bg-white transition-all cursor-pointer relative overflow-hidden"
-                  >
-                    <div className="flex gap-4">
-                      {proj.product.productImageBase64 ? (
-                        <img src={proj.product.productImageBase64} className="w-16 h-16 object-cover rounded-2xl bg-white border border-gray-100" alt="" />
-                      ) : (
-                        <div className="w-16 h-16 bg-gray-200 rounded-2xl flex items-center justify-center">
-                          <PhotoIcon className="w-6 h-6 text-gray-400" />
-                        </div>
-                      )}
-                      <div className="flex-grow min-w-0">
-                        <h4 className="font-black text-sm truncate">{proj.product.name || 'Untitled Project'}</h4>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{proj.product.assetType}</p>
-                        <p className="text-[9px] text-gray-400">{new Date(proj.timestamp).toLocaleDateString()} • {proj.concepts.length} concepts</p>
-                      </div>
-                      <button 
-                        onClick={(e) => deleteProject(proj.id, e)}
-                        className="opacity-0 group-hover:opacity-100 p-2 text-gray-300 hover:text-red-500 transition-all"
-                      >
-                        <TrashIcon className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       <header className="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div 
@@ -270,15 +135,7 @@ const App: React.FC = () => {
               <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">AI Creative Studio</span>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setShowHistory(true)}
-              className="text-gray-400 hover:text-indigo-600 p-2 transition-colors relative"
-              title="Project History"
-            >
-              <ArchiveBoxIcon className="w-6 h-6" />
-              {savedProjects.length > 0 && <span className="absolute top-0 right-0 w-2 h-2 bg-indigo-500 rounded-full" />}
-            </button>
+          <div>
             <button 
               onClick={handleNewProject}
               className="bg-gray-900 text-white px-6 py-2.5 rounded-xl text-xs font-bold hover:bg-indigo-600 transition-all shadow-md active:scale-95 whitespace-nowrap tracking-widest"
@@ -295,15 +152,12 @@ const App: React.FC = () => {
             Design Like Your <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">Best Competitors</span>
           </h2>
           <p className="text-gray-500 text-lg font-medium leading-relaxed">
-            Input your product details or <span className="text-indigo-600 font-bold">Smart Link</span> to generate professional concepts. 
-            Your projects are saved locally for safety.
+            Input your product details or <span className="text-indigo-600 font-bold">Smart Link</span> to generate professional concepts.
           </p>
         </div>
 
-        {/* Input Form */}
         <section className="bg-white rounded-[2.5rem] shadow-2xl shadow-indigo-100/30 border border-gray-100 overflow-hidden">
           <div className="p-8 md:p-12 space-y-12">
-            
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               <div className="space-y-8">
                 <div>
@@ -456,7 +310,6 @@ const App: React.FC = () => {
           </div>
         </section>
 
-        {/* Results Section */}
         {concepts.length > 0 && (
           <div id="results-section" className="space-y-16 animate-in fade-in slide-in-from-bottom-12 duration-1000">
             <div className="flex flex-col md:flex-row items-end justify-between gap-6 pb-6 border-b-4 border-gray-900/5">
@@ -476,19 +329,12 @@ const App: React.FC = () => {
                 </div>
               </div>
               <div className="flex gap-4">
-                <button 
-                  onClick={handleSaveProject}
-                  className="bg-indigo-50 hover:bg-indigo-100 px-6 py-3 rounded-2xl border-2 border-indigo-100 text-indigo-600 text-[10px] font-black uppercase tracking-widest transition-all shadow-sm"
-                >
-                  Save Project to History
-                </button>
                 <div className="bg-gray-50 px-6 py-3 rounded-2xl border-2 border-gray-100 shadow-sm flex items-center">
                   <span className="text-gray-400 text-[10px] font-black uppercase tracking-widest">{product.assetType} • {product.aspectRatio}</span>
                 </div>
               </div>
             </div>
 
-            {/* Research Sources if URL was used */}
             {groundingSources.length > 0 && (
               <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm animate-in fade-in duration-1000">
                 <div className="flex items-center gap-2 mb-4">
